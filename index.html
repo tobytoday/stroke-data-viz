@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>dc.js - Scatter Composite with Legend</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../css/dc.css"/>
+    <style>
+        .container{
+            display: flex;
+            margin: 1rem;
+        }
+        .grid-section{
+            display: flex;
+            margin: 1rem;
+            grid-auto-flow: row;
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <section class="grid-section">
+        <div id="hypertensionChart">
+            <strong>Hypertension</strong>
+            <span class="reset" style="display: none;">Selected: <span class="filter"></span></span>
+            <a class="reset" href="javascript:hypertensionChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+    
+            <div class="clearfix"></div>
+    
+        </div>
+        <div id="genderChart">
+            <strong>Gender</strong>
+            <span class="reset" style="display: none;">Selected: <span class="filter"></span></span>
+            <a class="reset" href="javascript:genderChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+    
+            <div class="clearfix"></div>
+        </div>
+    </section>
+    
+    <section lass="grid-section">
+        <div id="smokeChart" class="dc-chart">
+            <strong>Smoking Criteria</strong>
+            <span class="reset" style="display: none;">Selected: <span class="filter"></span></span>
+            <a class="reset" href="javascript:smokingChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+    
+            <div class="clearfix"></div>
+        </div>
+
+        <div id="residenceChart" class="dc-chart">
+            <strong>Residency Type</strong>
+            <span class="reset" style="display: none;">Selected: <span class="filter"></span></span>
+            <a class="reset" href="javascript:residenceChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+    
+            <div class="clearfix"></div>
+        </div>
+
+        
+    </section>
+    
+    <section class="grid-section">
+        <div id="strokeChart" class="dc-chart">
+            <strong>Stroke</strong>
+            <span class="reset" style="display: none;">Selected: <span class="filter"></span></span>
+            <a class="reset" href="javascript:strokeChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+    
+            <div class="clearfix"></div>
+        </div>
+    </section>
+
+    <!-- <div>
+        <div class="dc-data-count">
+            <span class="filter-count"></span> selected out of <span class="total-count"></span> records | <a
+                href="javascript:dc.filterAll(); dc.renderAll();">Reset All</a>
+        </div>
+    </div> -->
+    
+
+<script type="text/javascript" src="../js/d3.js"></script>
+<script type="text/javascript" src="../js/crossfilter.js"></script>
+<script type="text/javascript" src="../js/dc.js"></script>
+<script type="text/javascript">
+
+
+var hypertensionChart = dc.rowChart("#hypertensionChart");
+var genderChart = dc.rowChart("#genderChart");
+var strokeChart = dc.barChart("#strokeChart");
+var smokingChart = new dc.PieChart("#smokeChart");
+var residenceChart = new dc.PieChart("#residenceChart");
+//var visCount = dc.dataCount(".dc-data-count");
+//var visTable = dc.dataTable(".dc-data-table");
+
+
+d3.csv("stroke-data.csv").then(function(experiments) {
+
+    var ndx = crossfilter(experiments);
+
+    var smokeDim  = ndx.dimension(function(d) {return ""+d.smoking_status;});
+    var hypertensionDim  = ndx.dimension(function(d) {return ""+d.hypertension;});
+    var heart_diseasenDim  = ndx.dimension(function(d) {return ""+d.heart_disease;});
+    var ever_marriedDim  = ndx.dimension(function(d) {return ""+d.ever_married;});
+    var work_typedDim  = ndx.dimension(function(d) {return ""+d.work_type;});
+    var Residence_typeDim  = ndx.dimension(function(d) {return ""+d.Residence_type;});
+    var avg_glucose_levelDim  = ndx.dimension(function(d) {return ""+d.avg_glucose;});
+    var strokeDim  = ndx.dimension(function(d) {return ""+d.stroke;});
+    var ageDim = ndx.dimension(function(d){ return "" +d.age;});
+    var genderDim = ndx.dimension(function(d){ return "" +d.gender;});
+
+    var all = ndx.groupAll();
+    var smokeGroup = smokeDim.group();
+    var ageGroup = ageDim.group();
+    var hypertensionGroup = hypertensionDim.group();
+    var genderGroup = genderDim.group();
+    var residenceGroup = Residence_typeDim.group();
+    var strokeGroup = strokeDim.group();
+
+    console.log(smokeGroup.all())
+     
+
+    hypertensionChart
+    .dimension(hypertensionDim)
+    .group(hypertensionGroup)
+    .elasticX(false)
+    .width(400)
+    .height(300)
+
+    genderChart
+    .dimension(genderDim)
+    .group(genderGroup)
+    .elasticX(false)
+    .width(400)
+    .height(300)
+
+    strokeChart
+    .dimension(strokeDim)
+    .group(strokeGroup)
+    .elasticY(false)
+    .width(500)
+    .height(400)
+    .brushOn(false)
+    .yAxisLabel("Total")
+    //.renderLabel(true)
+        // (_optional_) whether bar should be center to its x value. Not needed for ordinal chart, `default=false`
+        .centerBar(true)
+        // (_optional_) set gap between bars manually in px, `default=2`
+        .gap(10)
+        // (_optional_) set filter brush rounding
+        .round(Math.ceil)
+        .alwaysUseRounding(true)
+        .x(d3.scaleLinear().domain([-1, 5]))
+
+
+
+    smokingChart
+    .width(300)
+    .height(380)
+    .slicesCap(4)
+    .innerRadius(50)
+    .dimension(smokeDim)
+    .group(smokeGroup)
+    .legend(dc.legend().highlightSelected(true))
+    // workaround for #703: not enough data is accessible through .label() to display percentages
+    .on('pretransition', function(chart) {
+        chart.selectAll('text.pie-slice').text(function(d) {
+            return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+        })
+    });
+
+    residenceChart
+    .width(300)
+    .height(380)
+    .slicesCap(4)
+    //.innerRadius(100)
+    .dimension(Residence_typeDim)
+    .group(residenceGroup)
+    .legend(dc.legend().highlightSelected(true))
+    // workaround for #703: not enough data is accessible through .label() to display percentages
+    .on('pretransition', function(chart) {
+        chart.selectAll('text.pie-slice').text(function(d) {
+            return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+        })
+    });
+
+
+
+//     visCount
+//     .dimension(ndx)
+//     .group(all);
+
+//     visTable
+//     .dimension(ndx)
+// // Data table does not use crossfilter group but rather a closure
+// // as a grouping function
+//     .group( function(d){
+//         return d;
+//     })
+//     .columns([
+//         "id",
+//         "gender",
+//         "age",
+//         "hypertension",
+//         "heart_disease",
+//         "ever_married",
+//         "work_type",
+//         "work_type",
+//         "avg_glucose_level",
+//         "bmi",
+//         "smoking_status",
+//         "stroke",
+//         ]);
+
+  dc.renderAll();
+});
+
+</script>
+
+</div>
+</body>
+</html>
